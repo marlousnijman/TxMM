@@ -2,10 +2,10 @@ from tweepy import OAuthHandler, API
 import unicodecsv
 import datetime
 
-consumer_key="hxyzr33lfxrot5D8TnjdLvY4q"
-consumer_secret="ObHwYFXPtPLKzMUuHj7D5tnmqSliYfsiAuFzr1R4fRTrrVlt8P"
-access_token="239026422-RhrqJe0kHS3PouRW0904XXYS2LYFZTnCj9jMQp7b"
-access_token_secret="lef6BN8K0q4MMjQq9fKb2KgnjWmnpncu9Tv99nZPp0CX6"
+consumer_key=""
+consumer_secret=""
+access_token=""
+access_token_secret=""
 
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
