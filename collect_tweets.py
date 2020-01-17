@@ -1,4 +1,4 @@
-from tweepy import OAuthHandler, API
+from tweepy import OAuthHandler, API, Cursor
 import unicodecsv
 import datetime
 
@@ -9,7 +9,7 @@ access_token_secret=""
 
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
-api = API(auth)
+api = API(auth, wait_on_rate_limit=True)
 
 political_parties = ["VVD",
                      "PvdA",
@@ -33,14 +33,17 @@ with open('tweets.csv', mode= 'wb') as tweets_file:
                            "reply",
                            "retweet"])
     for political_party in political_parties:
-        tweets = api.user_timeline(screen_name=political_party, tweet_mode='extended')
-        for tweet in tweets:
+        for tweet in Cursor(api.user_timeline, screen_name=political_party, tweet_mode="extended").items():
             reply = tweet.in_reply_to_status_id is not None
             retweet = tweet.full_text.startswith("RT @")
             correct_date = endDate > tweet.created_at > startDate
             if correct_date:
+                if retweet:
+                    tweet_text = tweet.retweeted_status.full_text
+                else:
+                    tweet_text = tweet.full_text
                 tweet_writer.writerow([political_party,
-                                       tweet.full_text,
+                                       tweet_text,
                                        tweet.created_at,
                                        reply,
                                        retweet])
