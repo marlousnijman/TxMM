@@ -26,7 +26,7 @@ startDate = datetime.datetime(2019, 1, 1, 0, 0, 0)
 endDate = datetime.datetime(2020, 1, 1, 0, 0, 0)
 
 with open('tweets.csv', mode= 'wb') as tweets_file:
-    tweet_writer = unicodecsv.writer(tweets_file, delimiter=',')
+    tweet_writer = unicodecsv.writer(tweets_file, delimiter=',', encoding='utf-8')
     tweet_writer.writerow(["political_party",
                            "tweet_text",
                            "date",
