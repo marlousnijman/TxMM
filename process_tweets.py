@@ -2,7 +2,10 @@ import re
 import nltk
 import string
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from nltk.corpus import stopwords
+from pattern.text.nl import sentiment
 
 # nltk.download('stopwords')
 
@@ -22,10 +25,11 @@ def clean_tweets(tweet):
     tweet = re.sub("@[A-Za-z0-9]+","", tweet) # Remove mentions
     tweet = re.sub("http\S+", "", tweet) # Remove links
     tweet = tweet.translate(None, string.punctuation) # Remove punctuation
-    tweet = tweet.replace("\n", " ")
-    tweet = remove_stopwords(tweet)
+    tweet = tweet.replace("\n", " ") # Remove new lines
+    tweet = remove_stopwords(tweet) # Remove stopwords
 
     return tweet
+
 
 # Remove stopwords from a tweet
 def remove_stopwords(tweet):
@@ -45,6 +49,20 @@ def clean_data(tweets):
     return tweets
 
 
+def compute_sentiment(tweets):
+    tweets["polarity"] = tweets["tweet_text"].apply(lambda x: sentiment(x)[0])
+    tweets["subjectivity"] = tweets["tweet_text"].apply(lambda x: sentiment(x)[1])
+    return tweets
+
+
 tweets = clean_data(tweets)
-print(tweets['processed_tweets'])
-print(tweets['political_party'].value_counts())  # Count tweets per party
+tweets = compute_sentiment(tweets)
+
+average_polarity = tweets.groupby('political_party')['polarity'].mean().sort_values(ascending=False)
+average_polarity.plot.bar(color="pink")
+plt.xlabel("Political Party")
+plt.ylabel("Average Polarity")
+plt.title("Sentiment of Dutch Political Parties on Twitter")
+plt.tight_layout()
+plt.savefig("plots/sentiment.png")
+plt.show()
