@@ -55,6 +55,7 @@ def compute_sentiment(tweets):
     return tweets
 
 
+# Plot the average sentiment for each party
 def plot_sentiment(tweets):
     average_polarity = tweets.groupby('political_party')['polarity'].mean().sort_values(ascending=False)
     average_polarity.plot.bar(color="pink")
@@ -66,13 +67,19 @@ def plot_sentiment(tweets):
     plt.show()
 
 
-def get_bag_of_words(tweet):
+# Tokenizes tweets
+def tokenize(tweet):
     return tweet.split()
 
 
+# Compute topics that political parties tweet about
 def compute_topics(tweets):
-    tweets["bag_of_words"] = tweets['processed_tweets'].apply(get_bag_of_words)
-    print(tweets['bag_of_words'])
+    topic_tweets = tweets[['political_party', 'processed_tweets']]
+    topic_tweets['processed_tweets'] = topic_tweets.groupby('political_party')['processed_tweets'].transform(lambda x: ' '.join(x))
+    topic_tweets = topic_tweets[['political_party', 'processed_tweets']].drop_duplicates().reset_index(drop=True)
+    topic_tweets["bag_of_words"] = topic_tweets['processed_tweets'].apply(tokenize)
+
+    print(topic_tweets)
 
 
 tweets = clean_data(tweets)
