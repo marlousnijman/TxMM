@@ -2,7 +2,6 @@ import re
 import nltk
 import string
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from nltk.corpus import stopwords
 from pattern.text.nl import sentiment
@@ -49,20 +48,34 @@ def clean_data(tweets):
     return tweets
 
 
+# Compute the polarity and subjectivity for every tweet
 def compute_sentiment(tweets):
-    tweets["polarity"] = tweets["tweet_text"].apply(lambda x: sentiment(x)[0])
-    tweets["subjectivity"] = tweets["tweet_text"].apply(lambda x: sentiment(x)[1])
+    tweets["polarity"] = tweets["processed_tweets"].apply(lambda x: sentiment(x)[0])
+    tweets["subjectivity"] = tweets["processed_tweets"].apply(lambda x: sentiment(x)[1])
     return tweets
+
+
+def plot_sentiment(tweets):
+    average_polarity = tweets.groupby('political_party')['polarity'].mean().sort_values(ascending=False)
+    average_polarity.plot.bar(color="pink")
+    plt.xlabel("Political Party")
+    plt.ylabel("Average Polarity")
+    plt.title("Sentiment of Dutch Political Parties on Twitter")
+    plt.tight_layout()
+    plt.savefig("plots/sentiment.png")
+    plt.show()
+
+
+def get_bag_of_words(tweet):
+    return tweet.split()
+
+
+def compute_topics(tweets):
+    tweets["bag_of_words"] = tweets['processed_tweets'].apply(get_bag_of_words)
+    print(tweets['bag_of_words'])
 
 
 tweets = clean_data(tweets)
 tweets = compute_sentiment(tweets)
-
-average_polarity = tweets.groupby('political_party')['polarity'].mean().sort_values(ascending=False)
-average_polarity.plot.bar(color="pink")
-plt.xlabel("Political Party")
-plt.ylabel("Average Polarity")
-plt.title("Sentiment of Dutch Political Parties on Twitter")
-plt.tight_layout()
-plt.savefig("plots/sentiment.png")
-plt.show()
+compute_topics(tweets)
+plot_sentiment(tweets)
