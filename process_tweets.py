@@ -3,12 +3,13 @@ import nltk
 import string
 import pandas as pd
 import matplotlib.pyplot as plt
-from nltk.corpus import stopwords
 from pattern.text.nl import sentiment
+from collections import Counter
 
-# nltk.download('stopwords')
 
-stop_words = set(stopwords.words('dutch'))
+# https://eikhart.com/blog/dutch-stopwords-list
+with open('stopwords.txt', 'r') as f:
+    stop_words = f.read().splitlines()
 
 pd.set_option('max_colwidth', 200)
 pd.set_option('display.max_columns', 10)
@@ -19,13 +20,13 @@ print(tweets['political_party'].value_counts())  # Count tweets per party
 
 
 # Clean the tweet text
+# Stop words are not removed, because words like 'niet' are important for sentiment analysis
 def clean_tweets(tweet):
     tweet = tweet.lower() # String to lower case
     tweet = re.sub("@[A-Za-z0-9]+","", tweet) # Remove mentions
     tweet = re.sub("http\S+", "", tweet) # Remove links
     tweet = tweet.translate(None, string.punctuation) # Remove punctuation
     tweet = tweet.replace("\n", " ") # Remove new lines
-    tweet = remove_stopwords(tweet) # Remove stopwords
 
     return tweet
 
@@ -75,11 +76,14 @@ def tokenize(tweet):
 # Compute topics that political parties tweet about
 def compute_topics(tweets):
     topic_tweets = tweets[['political_party', 'processed_tweets']]
+    topic_tweets['processed_tweets'] = topic_tweets['processed_tweets'].apply(remove_stopwords) # Remove stopwords
     topic_tweets['processed_tweets'] = topic_tweets.groupby('political_party')['processed_tweets'].transform(lambda x: ' '.join(x))
     topic_tweets = topic_tweets[['political_party', 'processed_tweets']].drop_duplicates().reset_index(drop=True)
     topic_tweets["bag_of_words"] = topic_tweets['processed_tweets'].apply(tokenize)
+    topic_tweets['word_frequencies'] = topic_tweets['bag_of_words'].apply(Counter)
+    topic_tweets['topics'] = topic_tweets['word_frequencies'].apply(lambda x: x.most_common(10))
 
-    print(topic_tweets)
+    print(topic_tweets[['political_party', 'topics']])
 
 
 tweets = clean_data(tweets)
