@@ -1,11 +1,12 @@
 import re
-import nltk
 import string
 import pandas as pd
 import matplotlib.pyplot as plt
 from pattern.text.nl import sentiment
 from collections import Counter
+import demoji
 
+# demoji.download_codes()
 
 # https://eikhart.com/blog/dutch-stopwords-list
 with open('stopwords.txt', 'r') as f:
@@ -15,7 +16,7 @@ pd.set_option('max_colwidth', 200)
 pd.set_option('display.max_columns', 10)
 pd.set_option('display.max_rows', 10)
 
-tweets = pd.read_csv("tweets.csv")
+tweets = pd.read_csv("tweets.csv", encoding='utf-8')
 print(tweets['political_party'].value_counts())  # Count tweets per party
 
 
@@ -25,7 +26,8 @@ def clean_tweets(tweet):
     tweet = tweet.lower() # String to lower case
     tweet = re.sub("@[A-Za-z0-9]+","", tweet) # Remove mentions
     tweet = re.sub("http\S+", "", tweet) # Remove links
-    tweet = tweet.translate(None, string.punctuation) # Remove punctuation
+    tweet = re.sub(r'[^\w\s]', '', tweet) # Remove punctuation
+    tweet = demoji.replace(tweet, "")
     tweet = tweet.replace("\n", " ") # Remove new lines
 
     return tweet
