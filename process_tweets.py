@@ -1,5 +1,4 @@
 import re
-import string
 import pandas as pd
 import matplotlib.pyplot as plt
 from pattern.text.nl import sentiment
@@ -83,7 +82,8 @@ def compute_topics(tweets):
     topic_tweets = topic_tweets[['political_party', 'processed_tweets']].drop_duplicates().reset_index(drop=True)
     topic_tweets["bag_of_words"] = topic_tweets['processed_tweets'].apply(tokenize)
     topic_tweets['word_frequencies'] = topic_tweets['bag_of_words'].apply(Counter)
-    topic_tweets['topics'] = topic_tweets['word_frequencies'].apply(lambda x: x.most_common(10))
+    topic_tweets['topics'] = topic_tweets['word_frequencies'].apply(lambda x: x.most_common(15))
+    topic_tweets['topics'] = topic_tweets['topics'].apply(lambda x: dict(x).keys())
 
     print(topic_tweets[['political_party', 'topics']])
 
