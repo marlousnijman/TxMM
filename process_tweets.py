@@ -1,72 +1,46 @@
+### Imports
+
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
 from pattern.text.nl import sentiment
 from collections import Counter
 import demoji
+from wordcloud import WordCloud
+
+### Downlaoads
 
 # demoji.download_codes()
 
-# https://eikhart.com/blog/dutch-stopwords-list
-with open('stopwords.txt', 'r') as f:
-    stop_words = f.read().splitlines()
+
+### Settings
 
 pd.set_option('max_colwidth', 200)
 pd.set_option('display.max_columns', 10)
 pd.set_option('display.max_rows', 10)
-
-tweets = pd.read_csv("tweets.csv", encoding='utf-8')
-print(tweets['political_party'].value_counts())  # Count tweets per party
+pd.options.mode.chained_assignment = None  # Turn off warnings
 
 
-# Clean the tweet text
-# Stop words are not removed, because words like 'niet' are important for sentiment analysis
+### Functions
+
+# Load stop words
+def load_stopwords(file_name):
+    with open(file_name, 'r') as f:    # https://eikhart.com/blog/dutch-stopwords-list
+        stop_words = f.read().splitlines()
+
+    return stop_words
+
+
+# Clean the tweet text (stop words are not removed, because words like 'niet' are important for sentiment analysis)
 def clean_tweets(tweet):
-    tweet = tweet.lower() # String to lower case
-    tweet = re.sub("@[A-Za-z0-9]+","", tweet) # Remove mentions
-    tweet = re.sub("http\S+", "", tweet) # Remove links
-    tweet = re.sub(r'[^\w\s]', '', tweet) # Remove punctuation
-    tweet = demoji.replace(tweet, "")
-    tweet = tweet.replace("\n", " ") # Remove new lines
+    tweet = tweet.lower()  # String to lower case
+    tweet = re.sub("@[A-Za-z0-9]+", "", tweet)  # Remove mentions
+    tweet = re.sub("http\S+", "", tweet)  # Remove links
+    tweet = re.sub(r'[^\w\s]', '', tweet)  # Remove punctuation
+    tweet = demoji.replace(tweet, "") # Remove emojis
+    tweet = tweet.replace("\n", " ")  # Remove new lines
 
     return tweet
-
-
-# Remove stopwords from a tweet
-def remove_stopwords(tweet):
-    tweet_tokens = tweet.split()
-    tweet_tokens = [w for w in tweet_tokens if not w in stop_words]
-    tweet = ' '.join(word for word in tweet_tokens)
-
-    return tweet
-
-
-# Clean the data
-def clean_data(tweets):
-    tweets = tweets[tweets['retweet'] == False] # Remove retweets
-    tweets = tweets[tweets['reply'] == False] # Remove replies
-    tweets["processed_tweets"] = tweets['tweet_text'].apply(clean_tweets)
-
-    return tweets
-
-
-# Compute the polarity and subjectivity for every tweet
-def compute_sentiment(tweets):
-    tweets["polarity"] = tweets["processed_tweets"].apply(lambda x: sentiment(x)[0])
-    tweets["subjectivity"] = tweets["processed_tweets"].apply(lambda x: sentiment(x)[1])
-    return tweets
-
-
-# Plot the average sentiment for each party
-def plot_sentiment(tweets):
-    average_polarity = tweets.groupby('political_party')['polarity'].mean().sort_values(ascending=False)
-    average_polarity.plot.bar(color="pink")
-    plt.xlabel("Political Party")
-    plt.ylabel("Average Polarity")
-    plt.title("Sentiment of Dutch Political Parties on Twitter")
-    plt.tight_layout()
-    plt.savefig("plots/sentiment.png")
-    plt.show()
 
 
 # Tokenizes tweets
@@ -74,21 +48,85 @@ def tokenize(tweet):
     return tweet.split()
 
 
+# Remove stopwords from a tweet
+def remove_stopwords(tweet, stop_words):
+    tweet_tokens = tokenize(tweet)
+    tweet_tokens = [w for w in tweet_tokens if not w in stop_words]
+    tweet = ' '.join(word for word in tweet_tokens)
+
+    return tweet
+
+
+# Clean the data
+def clean_data(tweets_df):
+    tweets_df = tweets_df[tweets_df['retweet'] == False]  # Remove retweets
+    tweets_df = tweets_df[tweets_df['reply'] == False]  # Remove replies
+    tweets_df["clean_tweets"] = tweets_df['tweet_text'].apply(clean_tweets)
+
+    return tweets_df
+
+
+# Compute the polarity and subjectivity for every tweet
+def compute_sentiment(tweets_df):
+    tweets_df["polarity"] = tweets_df["clean_tweets"].apply(lambda x: sentiment(x)[0])
+    tweets_df["subjectivity"] = tweets_df["clean_tweets"].apply(lambda x: sentiment(x)[1])
+
+    return tweets_df
+
+
+# Plot the average sentiment for each party
+def plot_sentiment(tweets_df):
+    average_polarity = tweets_df.groupby('political_party')['polarity'].mean().sort_values(ascending=False)
+    average_polarity.plot.bar(color="pink")
+    plt.xlabel("Political Party")
+    plt.ylabel("Average Polarity")
+    plt.title("Sentiment of Dutch Political Parties on Twitter")
+    plt.tight_layout()
+    plt.savefig("plots/sentiment.png")
+    plt.close()
+
+
 # Compute topics that political parties tweet about
-def compute_topics(tweets):
-    topic_tweets = tweets[['political_party', 'processed_tweets']]
-    topic_tweets['processed_tweets'] = topic_tweets['processed_tweets'].apply(remove_stopwords) # Remove stopwords
-    topic_tweets['processed_tweets'] = topic_tweets.groupby('political_party')['processed_tweets'].transform(lambda x: ' '.join(x))
-    topic_tweets = topic_tweets[['political_party', 'processed_tweets']].drop_duplicates().reset_index(drop=True)
-    topic_tweets["bag_of_words"] = topic_tweets['processed_tweets'].apply(tokenize)
-    topic_tweets['word_frequencies'] = topic_tweets['bag_of_words'].apply(Counter)
-    topic_tweets['topics'] = topic_tweets['word_frequencies'].apply(lambda x: x.most_common(15))
-    topic_tweets['topics'] = topic_tweets['topics'].apply(lambda x: dict(x).keys())
+def compute_topics(tweets_df, stop_words):
+    tweets_df = tweets_df[['political_party', 'clean_tweets']]
+    tweets_df['clean_tweets'] = tweets_df['clean_tweets'].apply(lambda x: remove_stopwords(x, stop_words))
+    tweets_df['clean_tweets'] = tweets_df.groupby('political_party')['clean_tweets'].transform(lambda x: ' '.join(x))
+    tweets_df = tweets_df[['political_party', 'clean_tweets']].drop_duplicates().reset_index(drop=True)
+    tweets_df["bag_of_words"] = tweets_df['clean_tweets'].apply(tokenize)
+    tweets_df['word_frequencies'] = tweets_df['bag_of_words'].apply(Counter)
+    tweets_df['topics'] = tweets_df['word_frequencies'].apply(lambda x: x.most_common(30))
+    tweets_df['topics'] = tweets_df['topics'].apply(lambda x: dict(x).keys())
 
-    print(topic_tweets[['political_party', 'topics']])
+    return tweets_df[['political_party', 'topics']]
 
 
-tweets = clean_data(tweets)
-tweets = compute_sentiment(tweets)
-compute_topics(tweets)
-plot_sentiment(tweets)
+# Generate a word cloud for a string of wowrds
+def generate_word_cloud(words, party):
+    word_cloud = WordCloud().generate(words)
+    plt.imshow(word_cloud, interpolation='bilinear')
+    plt.axis("off")
+    plt.savefig("plots/topics_"+party+".png")
+    plt.close()
+
+
+# Create word clouds from the lists of topics discussed for each party
+def topics_to_word_cloud(topic_tweets):
+    topic_tweets['topics'] = topic_tweets['topics'].transform(lambda x: ' '.join(x))
+    topic_tweets.apply(lambda x: generate_word_cloud(x.topics, x.political_party),  axis=1)
+
+
+# Compute sentiments and topics and plot them
+def main():
+    tweets = pd.read_csv("tweets.csv", encoding='utf-8')
+    stop_words = load_stopwords('stopwords.txt')
+    tweets = clean_data(tweets)
+    tweets = compute_sentiment(tweets)
+    plot_sentiment(tweets)
+    print(tweets['political_party'].value_counts())  # Count tweets per party
+    topics = compute_topics(tweets, stop_words)
+    topics_to_word_cloud(topics)
+
+
+# Run main
+if __name__ == '__main__':
+    main()
