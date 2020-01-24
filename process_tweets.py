@@ -141,6 +141,21 @@ def compute_labels(tweets_df):
     return tweets_df
 
 
+# Plot the sentiment of political parties towards certain topics
+def plot_sentiment_topic(tweets_df):
+    for filename in os.listdir('topics'):
+        topic = filename.replace('.txt', '')
+        topic_tweets = tweets_df[tweets_df[topic] == True]
+        average_polarity = topic_tweets.groupby('political_party')['polarity'].mean().sort_values(ascending=False)
+        average_polarity.plot.bar(color="pink")
+        plt.xlabel("Political Party")
+        plt.ylabel("Average Polarity")
+        plt.title("Sentiment of Dutch Political Parties on Twitter Towards "+topic)
+        plt.tight_layout()
+        plt.savefig("plots/sentiment_"+topic+".png")
+        plt.close()
+
+
 # Compute sentiments and topics and plot them
 def main():
     tweets = pd.read_csv("tweets.csv", encoding='utf-8')
@@ -151,6 +166,7 @@ def main():
     plot_sentiment(tweets)
     topics_to_word_cloud(topics)
     tweets = compute_labels(tweets)
+    plot_sentiment_topic(tweets)
 
 
 # Run main
