@@ -10,7 +10,6 @@ stikstof
 urgenda
 uitstoot
 bio
-eco
 environment
 planeet
 planet
