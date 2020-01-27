@@ -20,7 +20,7 @@ from wordcloud import WordCloud
 
 pd.set_option('max_colwidth', 200)
 pd.set_option('display.max_columns', 10)
-pd.set_option('display.max_rows', 10)
+pd.set_option('display.max_rows', 100)
 pd.options.mode.chained_assignment = None  # Turn off warnings
 cmap = colors.ListedColormap(['#F9CDAC', '#F3ACA2', '#EE8B97', '#E96A97', '#DB5087','#B8428C', '#973490'])
 
@@ -30,6 +30,8 @@ cmap = colors.ListedColormap(['#F9CDAC', '#F3ACA2', '#EE8B97', '#E96A97', '#DB50
 # Show information about tweet data set
 def show_data_summary(tweets_df):
     print(tweets_df['political_party'].value_counts())  # Count tweets per party
+    print(tweets_df.groupby('political_party')['retweet'].value_counts())
+    print(tweets_df.groupby('political_party')['reply'].value_counts())
 
 
 # Load stop words
@@ -68,8 +70,8 @@ def remove_stopwords(tweet, stop_words):
 
 # Clean the data
 def clean_data(tweets_df):
-    tweets_df = tweets_df[tweets_df['retweet'] == False]  # Remove retweets
-    tweets_df = tweets_df[tweets_df['reply'] == False]  # Remove replies
+    # tweets_df = tweets_df[tweets_df['retweet'] == False]  # Remove retweets
+    # tweets_df = tweets_df[tweets_df['reply'] == False]  # Remove replies
     tweets_df["clean_tweets"] = tweets_df['tweet_text'].apply(clean_tweets)
 
     return tweets_df
@@ -131,8 +133,8 @@ def compute_labels(tweets_df):
     return tweets_df
 
 
-# Plot the sentiment of political parties towards certain topics
-def plot_sentiment_topic(tweets_df):
+# Compute the average sentiment towards all topics
+def compute_sentiment_for_topics(tweets_df):
     sentiments = pd.DataFrame({'political_party': tweets_df['political_party'].unique()})
     sentiment_dict = tweets_df.groupby('political_party')['polarity'].mean().to_dict()
     sentiments['General'] = sentiments['political_party'].map(sentiment_dict)
@@ -142,6 +144,13 @@ def plot_sentiment_topic(tweets_df):
         topic_dict = topic_tweets.groupby('political_party')['polarity'].mean().to_dict()
         sentiments[topic] = sentiments['political_party'].map(topic_dict)
     sentiments = sentiments.sort_values(by=['General'], ascending=False)
+
+    return sentiments
+
+
+# Plot the sentiment of political parties towards certain topics
+def plot_sentiment_topic(tweets_df):
+    sentiments = compute_sentiment_for_topics(tweets_df)
     sentiments.plot.bar(x="political_party", cmap=cmap)
     plt.xlabel("Political Party")
     plt.ylabel("Average Polarity")
@@ -149,6 +158,12 @@ def plot_sentiment_topic(tweets_df):
     plt.tight_layout()
     plt.savefig("plots/sentiments.png")
     plt.close()
+
+
+# Save final dataframe to excel for easy inspection of tweets ordered by polarity
+def save_to_excel(tweets_df, filename):
+    tweets_df = tweets_df.sort_values(by=['political_party', 'polarity'], ascending=False)
+    tweets_df.to_excel(filename)
 
 
 # Compute sentiments and topics and plot them
@@ -161,6 +176,7 @@ def main():
     plot_sentiment_topic(tweets)
     topics = compute_topics(tweets)
     topics_to_word_cloud(topics)
+    save_to_excel(tweets, "processed_tweets.xlsx")
 
 
 # Run main
