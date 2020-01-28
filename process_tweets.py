@@ -29,6 +29,7 @@ cmap = colors.ListedColormap(['#F9CDAC', '#F3ACA2', '#EE8B97', '#E96A97', '#DB50
 
 # Show information about tweet data set
 def show_data_summary(tweets_df):
+    print("Total Tweets: "+str(len(tweets_df)))
     print(tweets_df['political_party'].value_counts())  # Count tweets per party
     print(tweets_df.groupby('political_party')['retweet'].value_counts())
     print(tweets_df.groupby('political_party')['reply'].value_counts())
@@ -127,7 +128,7 @@ def plot_sentiment_topic(tweets_df):
     plt.gca().invert_yaxis()
     plt.axvline(sentiments['General'].mean(), color='grey', linewidth=0.75, linestyle="--")
     plt.ylabel("Political Party")
-    plt.xlabel("Average Polarity")
+    plt.xlabel("Polarity")
     plt.title("Sentiment of Dutch Political Parties on Twitter")
     plt.tight_layout()
     plt.savefig("plots/sentiments.png")
@@ -177,8 +178,8 @@ def main():
     tweets = compute_sentiment(tweets)
     tweets = compute_labels(tweets)
     plot_sentiment_topic(tweets)
-    topics = compute_topics(tweets)
-    topics_to_word_cloud(topics)
+    # topics = compute_topics(tweets)
+    # topics_to_word_cloud(topics)
     show_data_summary(tweets)
     save_to_excel(tweets, "processed_tweets.xlsx")
 
