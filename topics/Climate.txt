@@ -13,8 +13,6 @@ bio
 environment
 planeet
 planet
-groen
-green
 warming
 global
 opwarming
