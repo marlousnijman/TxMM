@@ -106,6 +106,34 @@ def compute_labels(tweets_df):
     return tweets_df
 
 
+# Compute the number of tweets per tweet for each party
+def compute_topic_counts(tweets_df):
+    topic_counts = pd.DataFrame({'political_party': tweets_df['political_party'].unique()})
+    topic_count_dict = tweets_df['political_party'].value_counts().to_dict()
+    topic_counts['All Tweets'] = topic_counts['political_party'].map(topic_count_dict)
+    print(topic_counts)
+    for filename in os.listdir('topics'):
+        topic = filename.replace('.txt', '')
+        topic_tweets = tweets_df[tweets_df[topic] == True]
+        topic_count_dict = topic_tweets['political_party'].value_counts().to_dict()
+        topic_counts[topic] = topic_counts['political_party'].map(topic_count_dict)
+    topic_counts = topic_counts.sort_values(by=['All Tweets'], ascending=False)
+
+    return topic_counts
+
+
+# Plot the tweet counts per topic and party
+def plot_sentiment_topic_count(tweets_df):
+    topic_counts = compute_topic_counts(tweets_df)
+    topic_counts.plot.bar(x="political_party", cmap=cmap)
+    plt.xlabel("Political Party")
+    plt.ylabel("Number of Tweets")
+    plt.title("Number of Tweets about a Topic for Dutch Political Parties")
+    plt.tight_layout()
+    plt.savefig("plots/topiccounts.png")
+    plt.close()
+
+
 # Compute the average sentiment towards all topics
 def compute_sentiment_for_topics(tweets_df):
     sentiments = pd.DataFrame({'political_party': tweets_df['political_party'].unique()})
@@ -177,9 +205,10 @@ def main():
     tweets = clean_data(tweets)
     tweets = compute_sentiment(tweets)
     tweets = compute_labels(tweets)
+    plot_sentiment_topic_count(tweets)
     plot_sentiment_topic(tweets)
-    # topics = compute_topics(tweets)
-    # topics_to_word_cloud(topics)
+    topics = compute_topics(tweets)
+    topics_to_word_cloud(topics)
     show_data_summary(tweets)
     save_to_excel(tweets, "processed_tweets.xlsx")
 
